@@ -1,6 +1,0 @@
-  - env: TARGET="jenkins"
-    os: linux
-    dist: trusty
-    sudo: required
-    group: edge
-    python: 2.7

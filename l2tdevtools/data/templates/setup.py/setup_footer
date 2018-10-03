@@ -1,4 +1,0 @@
-        ('share/doc/${project_name}', [
-            ${doc_files}]),
-    ],
-)
