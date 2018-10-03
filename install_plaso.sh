@@ -50,3 +50,5 @@ echo "[INFO] Verification done."
 
 echo "[INFO] Installation done."
 echo "[INFO] Verify that all dependencies are installed by running the check_dependencies.py script"
+
+exit 0
