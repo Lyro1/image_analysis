@@ -1,21 +1,34 @@
 #!/bin/sh
 
-echo "Getting the l2tdevtools to install Plaso."
-sudo rm -rR l2tdevtools
-git clone https://github.com/log2timeline/l2tdevtools.git
+echo "Verifying dependencies."
+sudo apt-get install curl
+
+get_latest_release() {
+   curl --silent "https://api.github.com/repos/$1/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")'
+}
+
+echo "\nGetting the latest release of Plaso."
+release=$(get_latest_release "log2timeline/plaso")
+echo "Latest Plaso release is $release."
+
+echo "Trying to download the archive."
+sudo rm -rR "plaso-$release.tar.gz"
+wget "https://github.com/log2timeline/plaso/releases/download/$release/plaso-$release.tar.gz" -q --show-progress
+
 if [ "$?" -ne 0 ]; then
-    echo "Error: failed to clone the l2tdevtools repository."
+    echo "[ERROR] Failed to download the archive plaso-$release.tar.gz"
     exit 1
 fi
-echo "Successfully cloned the l2tdevtools repository."
 
-cd l2tdevtools
+echo "Successfully downloaded the archive plaso-$release.tar.gz"
 
-echo "Getting the pre-requisites dependencies."
-sudo apt-get install build-essential autoconf automake autopoint libtool gettext pkg-config debhelper devscripts fakeroot quilt autotools-dev zlib1g-dev libbz2-dev libssl-dev libfuse-dev libfuse-dev python-dev python-setuptools flex byacc python3-all python3-setuptools python3-all-dev liblzma-dev python-pbr python3-pbr python-setuptools-scm python3-setuptools-scm -y
+echo "Trying to extract the archive."
+tar -xzf plaso-$release.tar.gz
+if [ "$?" -ne 0 ]; then
+    echo "[ERROR] Failed to extract plaso-$release.tar.gz"
+    rm -rR "plaso-$release.tar.gz"
+    exit 2
+fi
 
-echo "Building target dpkg."
-PYTHONPATH=. python tools/build.py --preset plaso dpkg
-
-cd build
-echo "Built all the packages."
+echo "Removed the archive after extraction."
+rm -rR "plaso-$release.tar.gz"
