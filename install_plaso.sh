@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "[INFO] Verifying script requirements."
-sudo apt-get -q -y install curl
+sudo apt-get -q -y install curl mock
 
 echo "\n[INFO] Requirements verified."
 
