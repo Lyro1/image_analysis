@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "[INFO] Verifying script requirements."
-sudo apt-get -q -y install curl python-mock python-setuptools
+sudo apt-get -q -y install git curl python-mock python-setuptools
 
 echo "\n[INFO] Requirements verified."
 
