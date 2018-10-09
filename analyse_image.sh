@@ -10,8 +10,19 @@ fi
 echo "[INFO] Verify that Plaso is installed."
 
 if [ -z $(find . -maxdepth 1 -type d -name 'plaso-*' -print -quit) ]; then
-    echo "[ERROR] Plaso is not installed. Please run install_plaso.sh and try again"
-    exit 2
+    echo "[ERROR] Plaso is not installed."
+    echo "[INFO] Start the installation? (y/n)"
+    read answer
+    if [ "$answer" != "y" ] && [ "$answer" != "n" ]; then
+        echo "[ERROR] Invalid answer. Just type 'y' (yes) or 'n' (no)"
+        exit 2
+    fi
+    if [ "$answer" = "y" ]; then
+        ./install_plaso.sh
+    else
+        echo "[INFO] Not installing Plaso."
+        exit 3
+    fi
 fi
 
 echo "[INFO] Plaso is installed."
