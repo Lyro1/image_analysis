@@ -14,24 +14,12 @@ fi
 
 echo "[INFO] Plaso is installed."
 
-echo "[INFO] Resolving Artifacts definitions."
-git clone https://github.com/ForensicArtifacts/artifacts
-if [ "$?" -ne 0 ]; then
-    echo "[ERROR] Failed to get the latest Artifacts definitions."
-    exit 3
-fi
-
-yes | sudo cp -rf artifacts/data/* /usr/share/artifacts
-if [ "$?" -ne 0 ]; then
-    echo "[ERROR] Failed to install the latest Artifacts definitions."
-    exit 6
-fi
-
-sudo rm -Rrf artifacts
-echo "[INFO] Successfully installed the latest Artifacts definitions."
-
 echo "[INFO] Generating the Plaso file for the provided image"
-log2timeline.py "outputs/$1-result.plaso" "$1"
+mkdir -p outputs
+img_name=$(echo "$1" | rev | cut -d '/' -f 1 | rev)
+date=$(date "+%d%m%y-%H%M%S")
+
+log2timeline.py outputs/$img_name-$date-result.plaso $1 --artifact_definition artifacts-20180827/data
 
 if [ "$?" -ne 0 ]; then
     echo "[ERROR] Failed to generate Plaso file."
@@ -41,13 +29,13 @@ fi
 echo "[INFO] Generated outputs/$1-result.plaso."
 echo "[INFO] Analysing the result file."
 
-psort.py -w "outputs/$1-result.log" "outputs/$1-result.plaso"
+psort.py -w "outputs/$img_name-$date-result.csv" "outputs/$img_name-$date-result.plaso"
 
 if [ "$?" -ne 0 ]; then
     echo "[ERROR] Failed to analyse the result file."
     exit 5
 fi
 
-echo "[INFO] Generated outputs/$1-result.log with the analyse results"
+echo "[INFO] Generated outputs/$img_name-$date-result.csv with the analyse results"
 
 exit 0
