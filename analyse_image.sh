@@ -1,7 +1,9 @@
 #!/bin/sh
 
+sudo apt-get install python-lzma
+
 if [ "$#" -ne 1 ] || [ ! -f "$1" ]; then
-    echo "[ERROR] Usage: ./image_analyse.sh <image>"
+    echo "[ERROR] Usage: ./analyse_image.sh <image>"
     exit 1
 fi
 
