@@ -3,7 +3,7 @@ A little forensic tool to filter processes from an ISO image.
 
 **Image Analysis** provides 3 scripts that allows you to perform the following actions:
 - Get a clean and working setup of *Log2Timeline Plaso* on a Debian 9 running system
-- Generate the *.plaso* and the *.log* files from an ISO image with `log2timeline.py` and `psort.py`
+- Generate the *.plaso* and the *.csv* files from an ISO image with `log2timeline.py` and `psort.py`
 - Get the processes from those files and filter them based on a trusted database of good and bad processes, using `elasticsearch`
 
 Note that the last action may change in a near future: [a script](https://github.com/rjhansen/nsrllookup) already exists and uses the NSRL database to filter good a bad processes based on their hashes.
