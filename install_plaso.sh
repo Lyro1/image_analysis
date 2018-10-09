@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "[INFO] Verifying script requirements."
-sudo apt-get -q -y install curl mock
+sudo apt-get -q -y install curl python-mock python-setuptools
 
 echo "\n[INFO] Requirements verified."
 
@@ -35,6 +35,27 @@ fi
 
 echo "[INFO] Removed the archive after extraction."
 rm -rR "plaso-$release.tar.gz"
+
+sudo rm -rRf artifacts
+artifactrelease="20180827"
+echo "[INFO] Getting Forensic Artifacts."
+echo "[INFO] Latest Forensic Artifacts version is $artifactrelease"
+
+wget "https://github.com/ForensicArtifacts/artifacts/releases/download/$artifactrelease/artifacts-$artifactrelease.tar.gz" -q --show-progress
+
+if [ "$?" -ne 0 ]; then
+    echo "[ERROR] Failed to download Forensic Artifacts from Github."
+    exit 3
+fi
+
+sudo rm -rfR "artifacts-$artifactrelease"
+tar -xzf "artifacts-$artifactrelease.tar.gz"
+rm -rRf "artifacts-$artifactrelease.tar.gz"
+
+cd artifacts-$artifactrelease
+sudo python setup.py install
+cd ..
+echo "[INFO] Forensic Artifacts installed."
 
 echo "[INFO] Building the dependencies."
 cd "plaso-$release"
