@@ -22,16 +22,6 @@ if [ "$2" != "g" ] && [ "$2" != "b" ]; then
     exit 3
 fi
 
-if [ -z $(echo "$4" | grep "[^.]*.csv") ]; then
-    echo "[ERROR] Invalid file. Need a .csv file to analyse."
-    exit 4
-fi
-
-if [ -z $(echo "$6" | grep "[^.]*.csv") ]; then
-    echo "[ERROR] Invalid file. Need a .csv file as the source."
-    exit 5
-fi
-
 if [ ! -f "$4" ]; then
     echo "[ERROR] File $4 not found."
     exit 6
@@ -43,9 +33,8 @@ if [ ! -f "$6" ]; then
 fi
 
 echo "[INFO] Verify ElasticSearch installation."
-status=$(dpkg -s elasticsearch | grep Status)
-deinstall=$(echo "$status" | grep "deinstall")
-if [ "$?" -ne 0 ] || [ ! -z "$deinstall" ]; then
+status=$(dpkg -s elasticsearch | grep "Status: install ok installed")
+if [ "$?" -ne 0 ] || [ -z "$status" ]; then
     echo "[ERROR] ElasticSearch is not installed."
     echo "[INFO] Start the installation? (y/n)"
     read answer
@@ -76,5 +65,10 @@ if [ "$?" -eq 1 ]; then
 fi 
 
 echo "[INFO] ElasticSearch started."
+
+echo "[INFO] NSRL Base file enhancement."
+
+enhance=$(echo "$(cat $6)" | sed -r 's/[\"]+/\x27/g' | tail -n +2)
+echo "$enhance" > "$6"
 
 exit 0
