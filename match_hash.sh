@@ -95,6 +95,8 @@ echo "[INFO] Saved the result in $resfile"
 
 echo "[INFO] Remove trash files."
 sudo rm -rRf hashfile.txt set
+unknownfiles=$(wc -l "$resfile" | awk '{ print $1 }')
 echo "[INFO] Analyse complete."
+echo "[INFO] $unknownfiles unknown files were found."
 
 exit 0
