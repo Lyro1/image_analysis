@@ -1,74 +1,100 @@
 #!/bin/sh
 
-install_elasticsearch() {
-    wget "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.4.2.deb" -q --show-progress
-    sudo dpkg -i "elasticsearch-6.4.2.deb"
-    sudo apt-get install -f
-    sudo rm -rRf "elasticsearch-6.4.2.deb"
-}
+if [ "$#" -ne 2 ]; then
+    echo "[ERROR] Usage:"
+    echo "To analyse a hash collectio file:"
+    echo "   ./match_hash.sh -f <filename>"
+    echo "To analyse a directory:"
+    echo "   ./match_hash.sh -d <directoryname>" 
+    exit 1   
+fi
 
-if [ "$#" -ne 6 ]; then
-    echo "[ERROR] Usage: ./match_hash -m <mode> -f <file to filter> -c <source>"
+if [ "$1" != "-f" ] && [ "$1" != "-d" ]; then
+    echo "[ERROR] Usage:"
+    echo "To analyse a hash collection file:"
+    echo "   ./match_hash.sh -f <filename>"
+    echo "To analyse a directory:"
+    echo "   ./match_hash.sh -d <directoryname>"
     exit 1
 fi
 
-if [ "$1" != "-m" ] || [ "$3" != "-f" ] || [ "$5" != "-c" ]; then
-    echo "[ERROR] Invalid options: ./match_hash -m <mode> -f <file to filter> -c <source>"
+if [ "$1" = "-f" ] && [ ! -f "$2" ]; then
+    echo "[ERROR] Invalid filename: can't find $2"
     exit 2
 fi
 
-if [ "$2" != "g" ] && [ "$2" != "b" ]; then
-    echo "[ERROR] Invalid mode: only 'b' (bad filter) or 'g' (good filter)"
+if [ "$1" = "-d" ] && [ ! -d "$2" ]; then
+    echo "[ERROR] Invalid directory: can't find $2"
     exit 3
 fi
 
-if [ ! -f "$4" ]; then
-    echo "[ERROR] File $4 not found."
-    exit 6
+echo "[INFO] Checking for the NSRL Server."
+if [ ! -d "nsrlsvr" ]; then
+    echo "[INFO] NSRL Server not installed. Installing."
+    sudo apt-get install libboost-all-dev python3.5 -y
+    wget https://github.com/rjhansen/nsrlsvr/tarball/master -q --show-progress
+    tar xzf master
+    sudo rm master
+    mv rjhansen* nsrlsvr
+    cd nsrlsvr
+    cmake -DPYTHON_EXECUTABLE='which python3' .
+    sudo make
+    sudo make install
+    cd .. 
+    echo "[INFO] NSRL Server installed."
 fi
 
-if [ ! -f "$6" ]; then
-    echo "[ERROR] File $6 not found."
-    exit 7
+echo "[INFO] Starting NSRL Server."
+nsrlsvr
+
+echo "[INFO] Getting the last version of NSRL RDS hash set."
+sudo mkdir set -p
+wget https://nist.gov/itl/ssd/software-quality-group/nsrl-download/current-rds-hash-sets -q --show-progress
+sudo mv current-rds-hash-sets set
+
+echo "[INFO] Checking for the NSRL Client."
+if [ ! -d "nsrllookup" ]; then
+    echo "[INFO] NSRL Client not installed. Installing."
+    git clone https://github.com/rjhansen/nsrllookup.git
+    cd nsrllookup
+    cmake -D CMAKE_BUILD_TYPE=Release .
+    sudo make
+    sudo make install
+    cd ..
+    echo "[INFO] NSRL Client installed."
 fi
 
-echo "[INFO] Verify ElasticSearch installation."
-status=$(dpkg -s elasticsearch | grep "Status: install ok installed")
-if [ "$?" -ne 0 ] || [ -z "$status" ]; then
-    echo "[ERROR] ElasticSearch is not installed."
-    echo "[INFO] Start the installation? (y/n)"
-    read answer
-    if [ "$answer" != "y" ] && [ "$answer" != "n" ]; then
-        echo "[ERROR] Invalid answer. Just type 'y' (yes) or 'n' (no)"
-        exit 8
-    fi
-    if [ "$answer" = "y" ]; then
-        install_elasticsearch
-    else
-        echo "[INFO] Not installing ElasticSearch."
-        exit 9
-    fi
+echo "[INFO] Checking md5deep package."
+sudo apt-get install md5deep
+
+echo "[INFO] Starting the filtering of $2"
+
+hashfile="$2"
+if [ "$1" = "-d" ]; then
+    sudo md5deep -r "$2" > hashfile.txt
+    hashfile="hashfile.txt"
+fi
+name="$2"
+lastchar=$(echo -n "$name" | tail -c 1)
+if [ "$lastchar" = "/" ]; then
+    name=$(echo "$name" | sed 's/.$//')
 fi
 
-echo "[INFO] ElasticSearch installed."
+resname=$(echo "$name" | rev | cut -d '/' -f 1 | rev)
+date=$(date "+%d%m%y-%H%M%S")
+sudo mkdir "hash_outputs" -p
 
-ps ax | grep -v grep | grep "elasticsearch" > /dev/null
-if [ "$?" -eq 1 ]; then
-    echo "[INFO] ElasticSearch not running. Starting."
-    if [ ! -z "$(ps -p 1 | grep "systemd")" ]; then
-        echo "[INFO] System running systemd."
-        sudo systemctl start elasticsearch.service
-    else
-        echo "[INFO] System running init."
-        sudo -i service elastisearch start
-    fi
-fi 
+res=$(nsrllookup < "$hashfile")
+resfile="hash_outputs/$resname-$date.txt"
+sudo touch "$resfile"
+sudo chmod 666 "$resfile"
+echo "[INFO] Created $resfile"
+sudo echo "$res" >> "$resfile"
+sudo chmod 644 "$resfile"
+echo "[INFO] Saved the result in $resfile"
 
-echo "[INFO] ElasticSearch started."
-
-echo "[INFO] NSRL Base file enhancement."
-
-enhance=$(echo "$(cat $6)" | sed -r 's/[\"]+/\x27/g' | tail -n +2)
-echo "$enhance" > "$6"
+echo "[INFO] Remove trash files."
+sudo rm -rRf hashfile.txt set
+echo "[INFO] Analyse complete."
 
 exit 0
