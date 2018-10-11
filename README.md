@@ -12,6 +12,8 @@ Image Analysis is a package of scripts that have been developped for **Debian 9 
 
 The scripts provided by Image Analysis are autonomus. If your device does not have the required softwares, the scripts will automatically get them before executing their original process. This means that you don't have to worry about some prerequisites to run those scripts.
 
+For a detailed explanation on each script usage, please read the [Wiki](https://github.com/Lyro1/image_analysis/wiki) pages of each scripts.
+
 Usefull Links
 -
 
