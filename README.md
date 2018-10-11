@@ -1,5 +1,5 @@
 # Image Analysis
-A little forensic tool to filter processes from an ISO image.
+A little forensic tool to analyse files from an ISO image.
 
 **Image Analysis** provides 3 scripts that allows you to perform the following actions:
 - Get a clean and working setup of *Log2Timeline Plaso* on a Debian 9 running system.
