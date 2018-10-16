@@ -106,7 +106,6 @@ while IFS='' read -r line; do
     fi
 done < "$resfile"
 sudo chmod 644 "$resfinal"
-
 echo "[INFO] Remove trash files."
 sudo rm -rRf set "hashfile.txt" "$resfile"
 unknownfiles=$(wc -l "$resfinal" | awk '{ print $1 }')
