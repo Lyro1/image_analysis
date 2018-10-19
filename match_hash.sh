@@ -1,5 +1,21 @@
 #!/bin/sh
 
+getRealNames() {
+    sudo touch "$2"
+    sudo chmod 666 "$2"
+    i=0
+    while IFS='' read -r hash file; do
+        grep -i "$hash" "$3" >> "$2"
+        i=$((i+1))
+        echo "$i/$4"    
+    done < "$1"
+}
+
+echo "[INFO] Checking dependencies..."
+sudo apt-get install md5deep
+echo "[INFO] Dependencies checked."
+clear
+
 if [ "$#" -ne 2 ]; then
     echo "[ERROR] Usage:"
     echo "To analyse a hash collectio file:"
@@ -44,13 +60,15 @@ if [ ! -d "nsrlsvr" ]; then
     echo "[INFO] NSRL Server installed."
 fi
 
-echo "[INFO] Starting NSRL Server."
-nsrlsvr
+if [ -z $(pstree |grep 'nsrlsvr') ]; then
+    echo "[INFO] Installing the hash set."
+    sudo nsrlupdate "set/NSRLFile.txt"
 
-echo "[INFO] Getting the last version of NSRL RDS hash set."
-sudo mkdir set -p
-wget https://nist.gov/itl/ssd/software-quality-group/nsrl-download/current-rds-hash-sets -q --show-progress
-sudo mv current-rds-hash-sets set
+    echo "[INFO] Starting the NSRL Server"
+    nsrlsvr
+fi
+
+echo "[INFO] NSRL Server started."
 
 echo "[INFO] Checking for the NSRL Client."
 if [ ! -d "nsrllookup" ]; then
@@ -64,8 +82,7 @@ if [ ! -d "nsrllookup" ]; then
     echo "[INFO] NSRL Client installed."
 fi
 
-echo "[INFO] Checking md5deep package."
-sudo apt-get install md5deep
+echo "[INFO] NSRL Client started."
 
 echo "[INFO] Starting the filtering of $2"
 
@@ -84,32 +101,36 @@ fi
 
 resname=$(echo "$name" | rev | cut -d '/' -f 1 | rev)
 date=$(date "+%d%m%y-%H%M%S")
+
+# Creates the hash_outputs folder with full rights
 sudo mkdir "hash_outputs" -p
+sudo chmod 777 "hash_outputs"
 
-res=$(nsrllookup < "$hashfile")
+# Creates the results files in the hash_outputs folder
 resfile="hash_outputs/$resname-$date-1.txt"
-resfinal="hash_outputs/$resname-$date.txt"
-sudo touch "$resfile"
+resfinal="hash_outputs/$resname-$date.csv"
 sudo touch "$resfinal"
-sudo chmod 666 "$resfile"
-sudo chmod 666 "$resfinal"
-echo "[INFO] Created $resfinal"
-sudo echo "$res" >> "$resfile"
-sudo chmod 644 "$resfile"
-echo "[INFO] Saved the result in $resfinal"
 
+# Run nsrllookup and save the output in resfile
+res=$(nsrllookup < "$hashfile" > "$resfile")
+
+# Count how many unknown files have been found
+unknownfiles=$(wc -l "$resfile" | awk '{ print $1 }')
+
+# Inform the user of the number of unknown files
+echo "[INFO] Saved the result in $resfinal"
+if [ "$unknownfiles" -ne 0 ]; then
+    echo "\033[31m[WARN] Found $unknownfiles unknown files.\033[0m"
+else
+    echo "[INFO] Found no unknown files."
+fi
+
+# Getting understandable lines in the output file
 echo "[INFO] Getting files names."
-while IFS='' read -r line; do
-    name=$(grep -i "$line" "$hashfile")
-    if [ ! -z "$name" ]; then
-        echo "$name" >> "$resfinal"
-    fi
-done < "$resfile"
-sudo chmod 644 "$resfinal"
+getRealNames "$resfile" "$resfinal" "binaries_corrected_whead.csv" "$unknownfiles"
+
 echo "[INFO] Remove trash files."
-sudo rm -rRf set "hashfile.txt" "$resfile"
-unknownfiles=$(wc -l "$resfinal" | awk '{ print $1 }')
+#sudo rm -rRf "hashfile.txt" "$resfile"
 echo "[INFO] Analyse complete."
-echo "[INFO] $unknownfiles unknown files were found."
 
 exit 0
